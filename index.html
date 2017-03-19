@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html ng-app="MyNotepad">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>Notepad</title>
+    <script src="bower_components/angular/angular.js"></script>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.css">
+
+    <script>
+        var app = angular.module("MyNotepad", []);
+        app.constant("baseUrl", "http://localhost:2403/records/");
+        app.controller("MyNotepadCntrl", function ($scope, $http, baseUrl) {
+            $scope.files = [];
+            $scope.newFiles = {};
+            $scope.curFile = {};
+            $scope.showSave = false;
+            $scope.showNew = true;
+
+            $scope.getItems = function () {
+                $scope.showSave = false;
+                $scope.showNew = true;
+                var promise = $http.get(baseUrl);
+                promise.then(fulfilled, rejected);
+            }
+
+            $scope.newRecord = function (file) {
+               // var record = {name: name, text: text};
+                var promise = $http.post(baseUrl, file);
+                promise.then(inserted, rejected);
+            }
+
+            $scope.deleteRec = function (file) {
+                $scope.curFile = file;
+                var promise = $http({
+                    method: "DELETE",
+                    url: baseUrl + file.id
+                });
+                promise.then(deleted, rejected);
+            }
+
+            $scope.editRec = function (file) {
+                $scope.showSave = true;
+                $scope.showNew = false;
+                $scope.newFiles = file;
+            }
+
+            $scope.saveRecord = function (file) {
+                $scope.curFile = file;
+                var promise = $http({
+                    method: "PUT",
+                    url: baseUrl + file.id,
+                    data: file
+                });
+                promise.then(putted, rejected);
+            }
+
+            function fulfilled(response) {
+                // $scope.files = JSON.parse(response.data); // data - данные запроса
+                $scope.files = response.data;
+                $scope.newFiles = {};
+            }
+
+            function rejected(error) {
+                console.error(error.status);
+                console.error(error.statusText);
+            }
+
+            function inserted(response) {
+                // $scope.files = JSON.parse(response.data); // data - данные запроса
+                $scope.files.push(response.data);
+                $scope.newFiles = {};
+            }
+
+            function deleted() {
+                $scope.files.splice($scope.files.indexOf($scope.curFile), 1);
+                $scope.newFiles = {};
+            }
+
+            function putted(response){
+                $scope.getItems();
+                $scope.newFiles = {};
+            }
+
+            $scope.getItems();
+        });
+    </script>
+</head>
+<body ng-controller="MyNotepadCntrl">
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">List files</h3>
+    </div>
+    <div class="panel-body">
+        <table class="table table-striped table-bordered">
+            <tr ng-repeat="file in files">
+                <td class="col-md-1">{{file.name}}</td>
+                <td class="col-md-8">{{file.text}}</td>
+                <td class="col-md-1">
+                    <button class="btn btn-primary" ng-click="editRec(file)">edit</button>
+                    <button class="btn btn-danger" ng-click="deleteRec(file)">delete</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="panel-body">
+        <form class="form-horizontal">
+            <div class="form-group">
+                <label for="inputName" class="col-sm-2 control-label">Name</label>
+                <div class="col-sm-10">
+                    <input type="text" ng-model="newFiles.name" class="form-control" id="inputName" placeholder="Name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="inputText" class="col-sm-2 control-label">Text</label>
+                <div class="col-sm-10">
+                    <input type="text" ng-model="newFiles.text" class="form-control" id="inputText" placeholder="Text">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button type="submit"   ng-click="newRecord(newFiles)" class="btn btn-success" ng-show="showNew">
+                        New
+                    </button>
+                    <button type="submit" ng-click="saveRecord(newFiles)" class="btn btn-success" ng-show="showSave">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+</body>
+</html>
